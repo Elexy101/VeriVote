@@ -1,0 +1,30 @@
+class Transition {
+    program;
+    functionName;
+    inputs;
+    constructor(program, functionName, inputs) {
+        this.program = program;
+        this.functionName = functionName;
+        this.inputs = inputs;
+    }
+}
+
+class Transaction {
+    address;
+    chainId;
+    transitions;
+    fee;
+    feePrivate;
+    constructor(address, chainId, transitions, fee, feePrivate = true) {
+        this.address = address;
+        this.chainId = chainId;
+        this.transitions = transitions;
+        this.fee = fee;
+        this.feePrivate = feePrivate;
+    }
+    static createTransaction(address, chainId, program, functionName, inputs, fee, feePrivate = true) {
+        const transition = new Transition(program, functionName, inputs);
+        return new Transaction(address, chainId, [transition], fee, feePrivate);
+    }
+}
+//# sourceMappingURL=transaction.js.map
