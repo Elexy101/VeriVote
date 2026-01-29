@@ -3,529 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeriVote | Decentralized Election</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Icons -->
+    <title>VeriVote – Private & Verifiable Elections on Aleo</title>
+    <meta name="description" content="VeriVote is a privacy-first voting platform on Aleo: private elections, verifiable results, and tamper-proof democracy powered by zero-knowledge proofs.">
+    <meta property="og:title" content="VeriVote – Private & Verifiable Elections on Aleo">
+    <meta property="og:description" content="Private, verifiable, and tamper-proof elections on Aleo. Create, vote, and verify with full confidentiality and mathematical proof of integrity.">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Leo Wallet Bundle -->
-    <script src="js/leo-wallet-bundle.js"></script>
-    <script src="js/transaction.js"></script>
-    <link  href="css/style.css" rel="stylesheet"  />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="css/main.css" rel="stylesheet" />
+
 </head>
-<body>
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Create Election Modal -->
-    <div class="modal" id="createElectionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Create New Election</h3>
-                <button class="close-modal" onclick="closeModal('createElectionModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Election Title *</label>
-                    <input type="text" class="form-control" id="electionTitle" placeholder="e.g., Student Council Election 2024" maxlength="50">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <textarea class="form-control" id="electionDescription" rows="3" placeholder="Describe the purpose and scope of this election..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Duration (Days) *</label>
-                    <input type="number" class="form-control" id="electionDuration" placeholder="7" min="1" max="365">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Candidates (1-4 candidates required)</label>
-                    <div class="form-row">
-                        <input type="text" class="form-control" id="candidate1" placeholder="Candidate 1 *" required>
-                        <input type="text" class="form-control" id="candidate2" placeholder="Candidate 2 (optional)">
+<body data-theme="light">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <a href="#" class="nav-logo">
+                    <i class="fas fa-vote-yea" style="font-size: 2rem; color: var(--primary);"></i>
+                    <div class="nav-logo-text">
+                        <span class="nav-logo-title">VeriVote</span>
+                        <span class="nav-logo-subtitle">Private Elections on Aleo</span>
                     </div>
-                    <div class="form-row mt-10">
-                        <input type="text" class="form-control" id="candidate3" placeholder="Candidate 3 (optional)">
-                        <input type="text" class="form-control" id="candidate4" placeholder="Candidate 4 (optional)">
+                </a>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <div class="theme-toggle">
+                        <button class="theme-btn active" data-theme="dark" title="Dark Mode">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                        <button class="theme-btn" data-theme="light" title="Light Mode">
+                            <i class="fas fa-sun"></i>
+                        </button>
                     </div>
-                </div>
-                <button class="btn btn-primary w-100" onclick="createElection()" id="createElectionBtn">
-                    <i class="fas fa-vote-yea"></i> Create Election
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Vote Modal -->
-    <div class="modal" id="voteModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Cast Your Vote</h3>
-                <button class="close-modal" onclick="closeModal('voteModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="election-card" id="voteElectionDetails"></div>
-                <div class="candidates-grid" id="voteCandidates"></div>
-                <div class="form-group">
-                    <label class="form-label">Privacy Seed (random text to generate nullifier)</label>
-                    <input type="text" class="form-control" id="nullifierSeed" placeholder="Enter any text for privacy...">
-                </div>
-                <button class="btn btn-success w-100" onclick="castVote()" id="castVoteBtn">
-                    <i class="fas fa-check-circle"></i> Submit Vote
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- End Election Modal -->
-    <div class="modal" id="endElectionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">End Election</h3>
-                <button class="close-modal" onclick="closeModal('endElectionModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="election-card" id="endElectionDetails"></div>
-                <div class="alert alert-warning p-20 rounded border mb-20">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>Warning:</strong> Ending an election will finalize results and make it read-only. This action cannot be undone.
-                </div>
-                <button class="btn btn-danger w-100" onclick="endElection()" id="endElectionBtn">
-                    <i class="fas fa-flag-checkered"></i> Finalize Election
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Extend Election Modal -->
-    <div class="modal" id="extendElectionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Extend Election Duration</h3>
-                <button class="close-modal" onclick="closeModal('extendElectionModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="election-card" id="extendElectionDetails"></div>
-                <div class="form-group">
-                    <label class="form-label">Extra Days (max 30 days)</label>
-                    <input type="number" class="form-control" id="extraDays" placeholder="7" min="1" max="30">
-                </div>
-                <button class="btn btn-warning w-100" onclick="extendElection()" id="extendElectionBtn">
-                    <i class="fas fa-calendar-plus"></i> Extend Election
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Transfer Election Modal -->
-    <div class="modal" id="transferElectionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Transfer Election Ownership</h3>
-                <button class="close-modal" onclick="closeModal('transferElectionModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="election-card" id="transferElectionDetails"></div>
-                <div class="form-group">
-                    <label class="form-label">New Admin Address</label>
-                    <input type="text" class="form-control" id="newAdminAddress" placeholder="aleo1...">
-                </div>
-                <button class="btn btn-warning w-100" onclick="transferElection()" id="transferElectionBtn">
-                    <i class="fas fa-user-friends"></i> Transfer Ownership
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Cancel Election Modal -->
-    <div class="modal" id="cancelElectionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Cancel Election</h3>
-                <button class="close-modal" onclick="closeModal('cancelElectionModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="election-card" id="cancelElectionDetails"></div>
-                <div class="alert alert-danger p-20 rounded border mb-20">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <strong>Danger:</strong> This will cancel the election immediately. All votes will be preserved but voting will be disabled.
-                </div>
-                <button class="btn btn-danger w-100" onclick="cancelElection()" id="cancelElectionBtn">
-                    <i class="fas fa-ban"></i> Cancel Election
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Container -->
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <div class="logo">
-                    <i class="fas fa-vote-yea"></i>
-                    <h1>V e r i V o t e</h1>
-                </div>
-                <div class="wallet-section">
-                    <button class="wallet-btn" onclick="toggleWalletConnection()" id="connectWalletBtn">
-                        <i class="fas fa-wallet"></i>
-                        <span>Connect Wallet</span>
-                    </button>
-                    <button class="wallet-btn" onclick="fetchRecords()" id="refreshBtn" style="display: none;">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>Refresh</span>
+                    <button class="btn btn-primary-custom d-none d-md-block">
+                        Enter App <i class="fas fa-arrow-right ms-2"></i>
                     </button>
                 </div>
             </div>
-        </header>
-
-        <div class="main-content">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <ul class="nav-menu">
-                    <li class="nav-item">
-                        <a href="#" class="nav-link active" onclick="showSection('dashboard')">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="showSection('create')">
-                            <i class="fas fa-plus-circle"></i>
-                            <span>Create Election</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="showSection('vote')">
-                            <i class="fas fa-vote-yea"></i>
-                            <span>Vote</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="showSection('myelections')">
-                            <i class="fas fa-landmark"></i>
-                            <span>My Elections</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="showSection('results')">
-                            <i class="fas fa-chart-bar"></i>
-                            <span>Results</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="showSection('verify')">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Verify</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" onclick="showSection('manage')">
-                            <i class="fas fa-cogs"></i>
-                            <span>Manage</span>
-                        </a>
-                    </li>
-                </ul>
-            </aside>
-
-            <!-- Main Content Area -->
-            <main>
-                <!-- Dashboard Section -->
-                <section id="dashboardSection" class="content-area active">
-                    <h2 class="section-title">
-                        <i class="fas fa-tachometer-alt"></i>
-                        Election Dashboard
-                    </h2>
-                    
-                    <div class="dashboard">
-                        <div class="card" onclick="showSection('create')">
-                            <div class="card-header">
-                                <h3 class="card-title">Active Elections</h3>
-                                <i class="fas fa-vote-yea card-icon"></i>
-                            </div>
-                            <div class="card-value" id="activeElectionsCount">0</div>
-                            <p>Elections accepting votes</p>
-                        </div>
-                        
-                        <div class="card" onclick="showSection('vote')">
-                            <div class="card-header">
-                                <h3 class="card-title">Votes Cast</h3>
-                                <i class="fas fa-check-circle card-icon"></i>
-                            </div>
-                            <div class="card-value" id="totalVotesCast">0</div>
-                            <p>Total votes across all elections</p>
-                        </div>
-                        
-                        <div class="card" onclick="showSection('myelections')">
-                            <div class="card-header">
-                                <h3 class="card-title">My Elections</h3>
-                                <i class="fas fa-landmark card-icon"></i>
-                            </div>
-                            <div class="card-value" id="myElectionsCount">0</div>
-                            <p>Elections I created or admin</p>
-                        </div>
-                        
-                        <div class="card" onclick="showSection('results')">
-                            <div class="card-header">
-                                <h3 class="card-title">Ended Elections</h3>
-                                <i class="fas fa-flag-checkered card-icon"></i>
-                            </div>
-                            <div class="card-value" id="endedElectionsCount">0</div>
-                            <p>Elections with finalized results</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-30">
-                        <h3 class="section-title">
-                            <i class="fas fa-history"></i>
-                            Recent Activity
-                        </h3>
-                        <div class="timeline" id="recentActivity">
-                            <!-- Timeline items will be inserted here -->
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Create Election Section -->
-                <section id="createSection" class="content-area">
-                    <h2 class="section-title">
-                        <i class="fas fa-plus-circle"></i>
-                        Create New Election
-                    </h2>
-                    
-                    <div class="card mb-30">
-                        <div class="card-header">
-                            <h3 class="card-title">Create Secure Election</h3>
-                        </div>
-                        <div class="card-body">
-                            <p>Create a private, secure election on the Aleo blockchain. Your election will be:</p>
-                            <ul class="mt-10 mb-20" style="padding-left: 20px;">
-                                <li>Private and verifiable</li>
-                                <li>Tamper-proof on blockchain</li>
-                                <li>Anonymous voting with zero-knowledge proofs</li>
-                                <li>Transparent results calculation</li>
-                            </ul>
-                            <button class="btn btn-primary" onclick="openModal('createElectionModal')">
-                                <i class="fas fa-plus-circle"></i> Create New Election
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <h3 class="section-title">
-                        <i class="fas fa-list"></i>
-                        My Created Elections
-                    </h3>
-                    <div id="myCreatedElections">
-                        <!-- Election cards will be inserted here -->
-                    </div>
-                </section>
-
-                <!-- Vote Section -->
-                <section id="voteSection" class="content-area">
-                    <h2 class="section-title">
-                        <i class="fas fa-vote-yea"></i>
-                        Vote in Elections
-                    </h2>
-                    
-                    <div class="dashboard mb-30">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Eligible to Vote</h3>
-                                <i class="fas fa-user-check card-icon"></i>
-                            </div>
-                            <div class="card-value" id="eligibleElectionsCount">0</div>
-                            <p>Elections you can vote in</p>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Already Voted</h3>
-                                <i class="fas fa-check-circle card-icon"></i>
-                            </div>
-                            <div class="card-value" id="votedElectionsCount">0</div>
-                            <p>Elections you've voted in</p>
-                        </div>
-                    </div>
-                    
-                    <div class="tabs" id="voteTabs">
-                        <button class="tab active" onclick="showVoteTab('active')">Active Elections</button>
-                        <button class="tab" onclick="showVoteTab('voted')">Already Voted</button>
-                        <button class="tab" onclick="showVoteTab('upcoming')">Upcoming</button>
-                    </div>
-                    
-                    <div id="activeVotesTab">
-                        <div id="activeElectionsList">
-                            <!-- Active election cards will be inserted here -->
-                        </div>
-                    </div>
-                </section>
-
-                <!-- My Elections Section -->
-                <section id="myelectionsSection" class="content-area">
-                    <h2 class="section-title">
-                        <i class="fas fa-landmark"></i>
-                        My Elections
-                    </h2>
-                    
-                    <div class="tabs">
-                        <button class="tab active" onclick="showMyElectionsTab('admin')">As Admin</button>
-                        <button class="tab" onclick="showMyElectionsTab('owner')">As Owner</button>
-                        <button class="tab" onclick="showMyElectionsTab('all')">All Involved</button>
-                    </div>
-                    
-                    <div id="adminElectionsTab">
-                        <div id="adminElectionsList">
-                            <!-- Admin election cards will be inserted here -->
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Results Section -->
-                <section id="resultsSection" class="content-area">
-                    <h2 class="section-title">
-                        <i class="fas fa-chart-bar"></i>
-                        Election Results
-                    </h2>
-                    
-                    <div class="dashboard mb-30">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Total Elections</h3>
-                                <i class="fas fa-poll card-icon"></i>
-                            </div>
-                            <div class="card-value" id="totalElectionsCount">0</div>
-                            <p>All elections on chain</p>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Avg. Participation</h3>
-                                <i class="fas fa-users card-icon"></i>
-                            </div>
-                            <div class="card-value" id="avgParticipation">0%</div>
-                            <p>Average voter turnout</p>
-                        </div>
-                    </div>
-                    
-                    <div class="tabs">
-                        <button class="tab active" onclick="showResultsTab('finalized')">Finalized</button>
-                        <button class="tab" onclick="showResultsTab('live')">Live Results</button>
-                        <button class="tab" onclick="showResultsTab('historical')">Historical</button>
-                    </div>
-                    
-                    <div id="finalizedResultsTab">
-                        <div id="finalizedElections">
-                            <!-- Finalized election results will be inserted here -->
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Verify Section -->
-                <section id="verifySection" class="content-area">
-                    <h2 class="section-title">
-                        <i class="fas fa-shield-alt"></i>
-                        Verify & Audit
-                    </h2>
-                    
-                    <div class="card mb-30">
-                        <div class="card-header">
-                            <h3 class="card-title">Verify Your Vote</h3>
-                        </div>
-                        <div class="card-body">
-                            <p>Verify that your vote was correctly recorded on the blockchain without revealing who you voted for.</p>
-                            <div class="form-group">
-                                <label class="form-label">Select Election</label>
-                                <select class="form-control" id="verifyElectionSelect">
-                                    <option value="">Select an election...</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Your Address</label>
-                                <input type="text" class="form-control" id="verifyAddress" placeholder="aleo1..." value="" readonly>
-                            </div>
-                            <button class="btn btn-primary" onclick="verifyVote()" id="verifyVoteBtn">
-                                <i class="fas fa-search"></i> Verify Vote
-                            </button>
-                            <div id="verifyResult" class="mt-20"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Election Audit Trail</h3>
-                        </div>
-                        <div class="card-body">
-                            <p>Check the complete history and status of any election.</p>
-                            <div class="form-group">
-                                <label class="form-label">Election ID</label>
-                                <input type="text" class="form-control" id="auditElectionId" placeholder="Enter election ID...">
-                            </div>
-                            <button class="btn btn-warning" onclick="auditElection()" id="auditElectionBtn">
-                                <i class="fas fa-clipboard-check"></i> Audit Election
-                            </button>
-                            <div id="auditResult" class="mt-20"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Manage Section -->
-                <section id="manageSection" class="content-area">
-                    <h2 class="section-title">
-                        <i class="fas fa-cogs"></i>
-                        Election Management
-                    </h2>
-                    
-                    <div class="dashboard mb-30">
-                        <div class="card" onclick="openExtendModal()" style="cursor: pointer;">
-                            <div class="card-header">
-                                <h3 class="card-title">Extend Election</h3>
-                                <i class="fas fa-calendar-plus card-icon"></i>
-                            </div>
-                            <p>Add more time to active elections</p>
-                        </div>
-                        
-                        <div class="card" onclick="openTransferModal()" style="cursor: pointer;">
-                            <div class="card-header">
-                                <h3 class="card-title">Transfer Ownership</h3>
-                                <i class="fas fa-user-friends card-icon"></i>
-                            </div>
-                            <p>Transfer admin rights to another user</p>
-                        </div>
-                        
-                        <div class="card" onclick="openEndModal()" style="cursor: pointer;">
-                            <div class="card-header">
-                                <h3 class="card-title">End Election</h3>
-                                <i class="fas fa-flag-checkered card-icon"></i>
-                            </div>
-                            <p>Finalize election and declare results</p>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Quick Actions</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                                <button class="btn btn-warning" onclick="openExtendModal()">
-                                    <i class="fas fa-calendar-plus"></i> Extend
-                                </button>
-                                <button class="btn btn-warning" onclick="openTransferModal()">
-                                    <i class="fas fa-user-friends"></i> Transfer
-                                </button>
-                                <button class="btn btn-success" onclick="checkStatus()">
-                                    <i class="fas fa-info-circle"></i> Check Status
-                                </button>
-                                <button class="btn btn-danger" onclick="openCancelModal()">
-                                    <i class="fas fa-ban"></i> Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
         </div>
-    </div>
+    </nav>
 
-    <!-- Main JavaScript -->
-    <script src="js/app.js"></script>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-bg">
+            <div class="hero-bg-gradient-1"></div>
+            <div class="hero-bg-gradient-2"></div>
+        </div>
+        
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <div class="mb-4">
+                        <span class="badge-pill">
+                            <i class="fas fa-shield-alt"></i> Private Elections on Aleo
+                        </span>
+                    </div>
+                    
+                    <h1 class="hero-title">
+                        VeriVote
+                        <span class="d-block text-muted" style="font-size: 2rem; opacity: 0.8;">
+                            Private & Verifiable Elections
+                        </span>
+                    </h1>
+                    
+                    <p class="hero-subtitle">
+                        VeriVote is a privacy-first voting platform inspired by secure democratic principles and rebuilt for Aleo. 
+                        Create, vote, and verify with fully confidential ballots, zk-provable results, and tamper-proof democracy — 
+                        without compromising integrity or transparency.
+                    </p>
+                    
+                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                        <div class="d-flex flex-column text-muted small">
+                            <span><i class="fas fa-check-circle text-success me-1"></i> Built for DAOs, organizations, and communities</span>
+                            <span><i class="fas fa-check-circle text-success me-1"></i> Powered by Aleo zero-knowledge execution layer</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="protocol-card">
+                        <p class="protocol-card-title">Platform Overview</p>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-3">
+                                <strong class="d-block text-primary">Private voting records</strong>
+                                <span class="small text-muted">with confidential voter choices and zk-provable election integrity</span>
+                            </li>
+                            <li class="mb-3">
+                                <strong class="d-block text-primary">ZK-based verification engine</strong>
+                                <span class="small text-muted">ensuring vote validity, one-vote-per-person, and result accuracy</span>
+                            </li>
+                            <li class="mb-3">
+                                <strong class="d-block text-primary">Tamper-proof, auditable elections</strong>
+                                <span class="small text-muted">with cryptographic proof of process integrity and no result manipulation</span>
+                            </li>
+                            <li>
+                                <strong class="d-block text-primary">Future: Decentralized governance</strong>
+                                <span class="small text-muted">with private voting for DAOs, corporate boards, and public elections</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem/Solution/Architecture -->
+    <section class="py-5 border-top border-bottom" style="background: rgba(15, 23, 42, 0.02);">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="h-100 p-4">
+                        <h6 class="text-uppercase fw-bold text-primary mb-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i> The Problem
+                        </h6>
+                        <p class="small text-muted mb-3">
+                            Traditional voting systems suffer from transparency trade-offs: either complete exposure of votes 
+                            or unverifiable black-box processes. Blockchain voting often reveals voter choices, while 
+                            centralized systems lack verifiability.
+                        </p>
+                        <ul class="small text-muted list-unstyled ps-0">
+                            <li class="mb-1"><i class="fas fa-times text-danger me-2"></i> Public voter choices & patterns</li>
+                            <li class="mb-1"><i class="fas fa-times text-danger me-2"></i> No mathematical proof of integrity</li>
+                            <li class="mb-1"><i class="fas fa-times text-danger me-2"></i> Vulnerable to manipulation</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="h-100 p-4">
+                        <h6 class="text-uppercase fw-bold text-primary mb-3">
+                            <i class="fas fa-lightbulb me-2"></i> The Solution
+                        </h6>
+                        <p class="small text-muted mb-3">
+                            A fully private, Aleo-native voting platform where all sensitive data lives in encrypted records 
+                            and election integrity is proven with zero-knowledge cryptography.
+                        </p>
+                        <ul class="small text-muted list-unstyled ps-0">
+                            <li class="mb-1"><i class="fas fa-check text-success me-2"></i> Private ballots & voter anonymity</li>
+                            <li class="mb-1"><i class="fas fa-check text-success me-2"></i> ZK-provable election integrity</li>
+                            <li class="mb-1"><i class="fas fa-check text-success me-2"></i> Tamper-proof result calculation</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="h-100 p-4">
+                        <h6 class="text-uppercase fw-bold text-primary mb-3">
+                            <i class="fas fa-sitemap me-2"></i> Architecture
+                        </h6>
+                        <p class="small text-muted mb-3">
+                            VeriVote comprises an Election Manager, Private Ballot Box, ZK Verification Engine, 
+                            Result Tally System, and Audit Module — all designed for Aleo's private execution.
+                        </p>
+                        <ul class="small text-muted list-unstyled ps-0">
+                            <li class="mb-1"><i class="fas fa-database me-2"></i> Votes stored as Aleo records</li>
+                            <li class="mb-1"><i class="fas fa-shield-alt me-2"></i> Results proven without revealing votes</li>
+                            <li class="mb-1"><i class="fas fa-code-branch me-2"></i> Composable with Aleo ecosystem</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why VeriVote -->
+    <section class="why-section">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-8">
+                    <h2 class="fw-bold mb-3">Why VeriVote?</h2>
+                    <p class="text-muted">
+                        The truly private yet verifiable voting platform on Aleo, designed for organizations, 
+                        DAOs, and democratic processes that demand both confidentiality and integrity.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="benefit-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-user-secret"></i>
+                        </div>
+                        <h5 class="benefit-title">Voter Privacy</h5>
+                        <p class="small text-muted mb-0">
+                            Individual votes remain confidential while election results are mathematically provable. 
+                            No public exposure of voter choices or patterns.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="benefit-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-check-double"></i>
+                        </div>
+                        <h5 class="benefit-title">Mathematical Verifiability</h5>
+                        <p class="small text-muted mb-0">
+                            Every election produces cryptographic proof of correct execution — from vote casting to 
+                            result tallying — without revealing sensitive data.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="benefit-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <h5 class="benefit-title">Tamper-Proof Process</h5>
+                        <p class="small text-muted mb-0">
+                            Built on Aleo's secure execution layer, ensuring votes cannot be altered, deleted, or 
+                            manipulated after casting. Immutable audit trail.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="benefit-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h5 class="benefit-title">DAO & Governance Ready</h5>
+                        <p class="small text-muted mb-0">
+                            Perfect for decentralized organizations needing private voting for treasury management, 
+                            protocol upgrades, and governance decisions.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="benefit-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h5 class="benefit-title">Future: Scalable Democracy</h5>
+                        <p class="small text-muted mb-0">
+                            Roadmap includes conviction voting, and other advanced mechanisms — 
+                            all with privacy and verifiability intact.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="benefit-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-gavel"></i>
+                        </div>
+                        <h5 class="benefit-title">Compliance & Audit Support</h5>
+                        <p class="small text-muted mb-0">
+                            Generate selective proofs for auditors and regulators without exposing voter identities or 
+                            compromising election secrecy.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap -->
+    <section class="roadmap-section">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-8">
+                    <h2 class="fw-bold mb-3">Development Roadmap</h2>
+                    <p class="text-muted">
+                        Progressive rollout from basic private elections to a comprehensive governance platform.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="phase-card">
+                        <p class="phase-badge">Phase 1 • Foundation</p>
+                        <ul class="small text-muted list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i> Basic private election creation</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i> Anonymous voting with ZK proofs</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i> Tamper-proof result calculation</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i> Individual vote verification</li>
+                            <li><i class="fas fa-check-circle text-primary me-2"></i> Basic election audit trail</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="phase-card">
+                        <p class="phase-badge">Phase 2 • Enhancement</p>
+                        <ul class="small text-muted list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-circle text-primary me-2"></i> Multi-choice & ranked voting</li>
+                            <li class="mb-2"><i class="fas fa-circle text-primary me-2"></i> DAO & organization tooling</li>
+                            <li class="mb-2"><i class="fas fa-circle text-primary me-2"></i> Advanced election parameters</li>
+                            <li class="mb-2"><i class="fas fa-circle text-primary me-2"></i> Delegated voting (liquid democracy)</li>
+                            <li><i class="fas fa-circle text-primary me-2"></i> Comprehensive analytics dashboard</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="phase-card">
+                        <p class="phase-badge">Phase 3 • Ecosystem</p>
+                        <ul class="small text-muted list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-circle text-primary me-2"></i> Quadratic & conviction voting</li>
+                            <li class="mb-2"><i class="fas fa-circle text-primary me-2"></i> Cross-chain governance integration</li>
+                            <li class="mb-2"><i class="fas fa-circle text-primary me-2"></i> Institutional election management</li>
+                            <li class="mb-2"><i class="fas fa-circle text-primary me-2"></i> Regulatory compliance modules</li>
+                            <li><i class="fas fa-circle text-primary me-2"></i> Aleo as the private democracy layer</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="cta-card">
+                        <h3 class="cta-title">Ready for Private, Verifiable Elections?</h3>
+                        <p class="mb-4" style="opacity: 0.9;">
+                            Launch the VeriVote dApp to create your first private election on Aleo testnet. 
+                            Experience the future of democratic processes today.
+                        </p>
+
+                        <p class="small mt-4 mb-0" style="opacity: 0.8;">
+                            Leo Wallet • Testnet environment • Open source
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-text mb-0">
+                © 2026 VeriVote. Made with <i class="fas fa-heart text-danger mx-1"></i> for the Aleo ecosystem.
+                <a href="https://github.com/Elexy101/Verivote" class="footer-link ms-2" target="_blank">
+                    <i class="fab fa-github me-1"></i> GitHub
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/main.js"></script>
 </body>
 </html>
